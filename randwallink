@@ -1,0 +1,31 @@
+while getopts q:o: flag
+do
+    case "${flag}" in
+      q) querry=${OPTARG};;
+      o) opt=${OPTARG};;
+  esac
+ done
+#querry
+query_file="$HOME/.config/wallpaper/frq-theme"
+[ -z "$querry" ] && echo lol && querry="$(cat "$query_file" | fzf )"
+[ "$querry" = add ] && read querry && echo "$querry" >> "$query_file"
+querry="$(echo "$querry" | sed 's/ /%20/g')"
+echo "$querry"
+wal_col="$(echo "cc0000\n0099cc\n77cc33\nff9900\n\n\n\n" | shuf | sed 1q)"
+#ratios='portrait%2C1x1%2C3x2%2C4x3%2C5x4'
+ratios='portrait'
+id="$(curl -s -G "https://wallhaven.cc/api/v1/search" -d "q=$querry" -d "colors=$wal_col" -d "ratios=$ratios" -d "sorting=random" | jq -r '.data[0].id')"
+link="$(curl -s -G "https://wallhaven.cc/api/v1/w/$id"  | jq -r '.data.path')"
+  
+echo "$link"
+echo "$link" >> "$HOME/link.txt"
+bg_path="$HOME/bg/"
+name="wallhaven-""$id"".jpg"
+echo "$bg_path"
+wldl="$bg_path""$name"
+low_wldl="$bg_path""low-""$name"
+aria2c -o "$name" -d "$bg_path" "$link" 
+convert "$wldl" -fill '#000000' -colorize 50% "$low_wldl"
+termux-api-start
+[ "$opt" = s ] && termux-wallpaper -f "$low_wldl"
+[ "$opt" = s ] || termux-wallpaper -l -f  "$low_wldl"
